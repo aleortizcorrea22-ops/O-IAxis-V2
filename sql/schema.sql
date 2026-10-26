@@ -115,12 +115,10 @@ CREATE TABLE IF NOT EXISTS informe_condensado (
     observaciones VARCHAR(255)
 );
 
--- Bq/L cargado por estación para cada semana (CTM, CL, CCR3, CFA, CVDD, CA)
-CREATE TABLE IF NOT EXISTS condensado_detalle (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    informe_id INT NOT NULL,
-    estacion VARCHAR(10) NOT NULL,
-    bq_l DECIMAL(10,4),
-    FOREIGN KEY (informe_id) REFERENCES informe_condensado(id) ON DELETE CASCADE,
-    UNIQUE KEY uniq_estacion_informe (informe_id, estacion)
-);
+-- Nota: NO existe tabla de Bq/L propia para este informe. Los valores de Bq/L
+-- se leen siempre en vivo desde reportes_analisis + muestras_detalle (lo que
+-- se guarda con el botón "Guardar Datos" de index.php), buscando por las mismas
+-- fechas Desde/Hasta (o Almafuerte Desde/Hasta). Así nunca queda un valor
+-- duplicado o desactualizado respecto de index.php.
+-- Si tu base ya tenía la tabla condensado_detalle de una versión anterior, podés
+-- eliminarla: DROP TABLE IF EXISTS condensado_detalle;

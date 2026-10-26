@@ -1165,6 +1165,8 @@ function eliminarFila(boton) {
 }
 </script>
 
+<a href="condensado.php" class="bt2 no-print" style="position:fixed; font-size:16px; top: 6px; left:60%; width:150px; height:35px; cursor:pointer; display:flex; align-items:center; justify-content:center; background:#0369a1; color:#fff; text-decoration:none; border-radius:4px; font-weight:bold;">📋 Condensado</a>
+
 <input type="button" class="bt2 no-print" value=" Actual. N.L. "
     onclick="abrirYCerrarDOSN()"
     style="position:fixed; font-size:20px; top: 6px; left:78%; width:110px; height:35px; cursor:pointer;" />

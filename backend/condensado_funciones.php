@@ -52,6 +52,33 @@ const COLORES_ESTACION = [
     'CA'   => '#FFFF00', // amarillo puro, igual al Excel
 ];
 
+// Busca, EN VIVO, los Bq/L guardados desde index.php (reportes_analisis + muestras_detalle)
+// para el período exacto Desde/Hasta indicado. $soloAlmafuerte=true compara contra las
+// columnas almafuerte_fecha_desde/hasta y devuelve solo el valor de 'CA'.
+// Nunca se guarda una copia de estos valores: condensado.php siempre lee la fuente real.
+function buscarBqPorFechas($pdo, $desde, $hasta, $soloAlmafuerte = false) {
+    if (!$desde || !$hasta) return [];
+    $colDesde = $soloAlmafuerte ? 'almafuerte_fecha_desde' : 'fecha_desde';
+    $colHasta = $soloAlmafuerte ? 'almafuerte_fecha_hasta' : 'fecha_hasta';
+
+    $stmt = $pdo->prepare("SELECT id FROM reportes_analisis WHERE $colDesde = ? AND $colHasta = ? ORDER BY id DESC LIMIT 1");
+    $stmt->execute([$desde, $hasta]);
+    $reporteId = $stmt->fetchColumn();
+    if (!$reporteId) return [];
+
+    if ($soloAlmafuerte) {
+        $stmtM = $pdo->prepare("SELECT id_muestra, neto FROM muestras_detalle WHERE reporte_id = ? AND UPPER(id_muestra) = 'CA'");
+    } else {
+        $stmtM = $pdo->prepare("SELECT id_muestra, neto FROM muestras_detalle WHERE reporte_id = ? AND UPPER(id_muestra) != 'CA'");
+    }
+    $stmtM->execute([$reporteId]);
+    $resultado = [];
+    while ($m = $stmtM->fetch(PDO::FETCH_ASSOC)) {
+        $resultado[strtoupper($m['id_muestra'])] = $m['neto'];
+    }
+    return $resultado;
+}
+
 function fechaATimestamp($ddmmaaaa) {
     if (!$ddmmaaaa) return 0;
     $p = explode('/', $ddmmaaaa);
