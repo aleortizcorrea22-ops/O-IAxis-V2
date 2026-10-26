@@ -191,6 +191,7 @@ if ($vista === 'avance') {
     </div>
     <button class="btn-imprimir" onclick="window.print()">🖨️ Imprimir / PDF</button>
     <a href="index.php" style="background:#0369a1; color:#fff; padding:6px 14px; text-decoration:none; font-size:11px; font-weight:bold; border-radius:4px;">💧 Volver a Tritio en Agua</a>
+    <a href="../indexDOS/indexDOS.php" style="background:#374151; color:#fff; padding:6px 14px; text-decoration:none; font-size:11px; font-weight:bold; border-radius:4px;" target="_blank">⬅️ VOLVER</a>
 </div>
 
 <div class="hoja">
