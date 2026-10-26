@@ -307,25 +307,27 @@ if ($vista === 'avance') {
             <fieldset><legend>Muestreo principal (Torre Met. / Laboratorio / C. Río III / F. Aérea / V. del Dique)</legend>
             <div class="fila">
                 <div><label>Fecha Desde</label><input type="text" name="fecha_desde" placeholder="dd/mm/aaaa" pattern="\d{2}/\d{2}/\d{4}" onkeyup="mascaraFecha(this)" required></div>
-                <div><label>Fecha Hasta</label><input type="text" name="fecha_hasta" placeholder="dd/mm/aaaa" pattern="\d{2}/\d{2}/\d{4}" onkeyup="mascaraFecha(this)" required></div>
+                <div><label>Fecha Hasta</label><input type="text" id="input_fecha_hasta" name="fecha_hasta" placeholder="dd/mm/aaaa" pattern="\d{2}/\d{2}/\d{4}" onkeyup="mascaraFecha(this)" onblur="buscarBqAutomatico()" required></div>
                 <div><label>Fecha Medición</label><input type="text" name="fecha_medicion" placeholder="dd/mm/aaaa" pattern="\d{2}/\d{2}/\d{4}" onkeyup="mascaraFecha(this)"></div>
                 <div><label>Hum. sin % (ej 0.61)</label><input type="text" name="hum_pct" style="width:70px"></div>
                 <div><label>Temp °C</label><input type="text" name="temp_c" style="width:60px"></div>
             </div>
             <div class="fila">
                 <?php foreach (ESTACIONES_CONDENSADO as $sig => $e): ?>
-                    <div><label>Bq/L <?= $e['nombre'] ?></label><input type="text" name="bq_<?= strtolower($sig) ?>" style="width:80px"></div>
+                    <div><label>Bq/L <?= $e['nombre'] ?></label><input type="text" id="campo_bq_<?= strtolower($sig) ?>" name="bq_<?= strtolower($sig) ?>" style="width:80px"></div>
                 <?php endforeach; ?>
             </div>
+            <div id="aviso_autocompletado" style="display:none; margin-top:6px; color:#0369a1; font-weight:bold; font-size:10px;"></div>
             </fieldset>
             <fieldset><legend>Almafuerte (período propio)</legend>
             <div class="fila">
-                <div><label>Fecha Desde</label><input type="text" name="almafuerte_fecha_desde" placeholder="dd/mm/aaaa" pattern="\d{2}/\d{2}/\d{4}" onkeyup="mascaraFecha(this)"></div>
-                <div><label>Fecha Hasta</label><input type="text" name="almafuerte_fecha_hasta" placeholder="dd/mm/aaaa" pattern="\d{2}/\d{2}/\d{4}" onkeyup="mascaraFecha(this)"></div>
+                <div><label>Fecha Desde</label><input type="text" id="input_almafuerte_desde" name="almafuerte_fecha_desde" placeholder="dd/mm/aaaa" pattern="\d{2}/\d{2}/\d{4}" onkeyup="mascaraFecha(this)"></div>
+                <div><label>Fecha Hasta</label><input type="text" id="input_almafuerte_hasta" name="almafuerte_fecha_hasta" placeholder="dd/mm/aaaa" pattern="\d{2}/\d{2}/\d{4}" onkeyup="mascaraFecha(this)" onblur="buscarBqAlmafuerteAutomatico()"></div>
                 <div><label>Hum. sin %</label><input type="text" name="almafuerte_hum_pct" style="width:70px"></div>
                 <div><label>Temp °C</label><input type="text" name="almafuerte_temp_c" style="width:60px"></div>
-                <div><label>Bq/L Almafuerte</label><input type="text" name="bq_ca" style="width:80px"></div>
+                <div><label>Bq/L Almafuerte</label><input type="text" id="campo_bq_ca" name="bq_ca" style="width:80px"></div>
             </div>
+            <div id="aviso_autocompletado_almafuerte" style="display:none; margin-top:6px; color:#0369a1; font-weight:bold; font-size:10px;"></div>
             </fieldset>
             <div class="fila">
                 <div style="flex:1;"><label>Observaciones</label><input type="text" name="observaciones" style="width:100%"></div>
@@ -462,6 +464,64 @@ function mascaraFecha(input) {
     if (v.length >= 5) { input.value = `${v.slice(0,2)}/${v.slice(2,4)}/${v.slice(4,8)}`; }
     else if (v.length >= 3) { input.value = `${v.slice(0,2)}/${v.slice(2,4)}`; }
     else { input.value = v; }
+}
+
+// Autocompletado: busca en los reportes ya guardados desde index.php (tabla
+// reportes_analisis + muestras_detalle) un reporte cuyas fechas Desde/Hasta
+// coincidan, y llena los Bq/L de cada estación automáticamente.
+function buscarBqAutomatico() {
+    const desdeEl = document.querySelector('input[name="fecha_desde"]');
+    const hastaEl = document.getElementById('input_fecha_hasta');
+    const aviso = document.getElementById('aviso_autocompletado');
+    if (!desdeEl.value || !hastaEl.value) return;
+
+    fetch(`condensado_buscar.php?desde=${encodeURIComponent(desdeEl.value)}&hasta=${encodeURIComponent(hastaEl.value)}&almafuerte=0`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) { console.error(data.error); return; }
+            const siglas = ['CTM','CL','CCR3','CFA','CVDD'];
+            let encontrados = [];
+            siglas.forEach(sig => {
+                const campo = document.getElementById('campo_bq_' + sig.toLowerCase());
+                if (campo && data[sig] !== undefined && data[sig] !== null) {
+                    campo.value = data[sig];
+                    encontrados.push(sig);
+                }
+            });
+            if (encontrados.length > 0) {
+                aviso.style.display = 'block';
+                aviso.innerText = '✓ Bq/L completados automáticamente desde un reporte guardado (' + encontrados.join(', ') + ')';
+            } else {
+                aviso.style.display = 'block';
+                aviso.innerText = 'No se encontró ningún reporte con ese período exacto en index.php — completá los Bq/L manualmente.';
+                aviso.style.color = '#b45309';
+            }
+        })
+        .catch(err => console.error(err));
+}
+
+function buscarBqAlmafuerteAutomatico() {
+    const desdeEl = document.getElementById('input_almafuerte_desde');
+    const hastaEl = document.getElementById('input_almafuerte_hasta');
+    const aviso = document.getElementById('aviso_autocompletado_almafuerte');
+    if (!desdeEl.value || !hastaEl.value) return;
+
+    fetch(`condensado_buscar.php?desde=${encodeURIComponent(desdeEl.value)}&hasta=${encodeURIComponent(hastaEl.value)}&almafuerte=1`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) { console.error(data.error); return; }
+            const campo = document.getElementById('campo_bq_ca');
+            aviso.style.display = 'block';
+            if (data['CA'] !== undefined && data['CA'] !== null) {
+                campo.value = data['CA'];
+                aviso.innerText = '✓ Bq/L de Almafuerte completado automáticamente desde un reporte guardado';
+                aviso.style.color = '#0369a1';
+            } else {
+                aviso.innerText = 'No se encontró ningún reporte de Almafuerte con ese período exacto — completá manualmente.';
+                aviso.style.color = '#b45309';
+            }
+        })
+        .catch(err => console.error(err));
 }
 </script>
 
