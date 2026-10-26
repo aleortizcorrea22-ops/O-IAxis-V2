@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guardar_metadatos']))
 
         $valores = [
             $trimestreCalc, $anioCalc, $fDesde, $fHasta,
-            $_POST['fecha_medicion'] ?? '',
+            '', // fecha_medicion ya no se guarda acá: se toma en vivo de reportes_analisis.fecha_archivo
             $_POST['hum_pct'] !== '' ? str_replace(',', '.', $_POST['hum_pct']) : null,
             $_POST['temp_c'] !== '' ? str_replace(',', '.', $_POST['temp_c']) : null,
             $_POST['almafuerte_fecha_desde'] ?? '', $_POST['almafuerte_fecha_hasta'] ?? '',
@@ -73,13 +73,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guardar_metadatos']))
 // metadatos propios de Condensado (humedad/temp/observaciones) se completan desde
 // informe_condensado si ya se guardaron para esa fecha, o quedan vacíos si no.
 function obtenerSemanasDelAnio($pdo, $anio) {
-    $stmt = $pdo->prepare("SELECT DISTINCT fecha_desde, fecha_hasta, almafuerte_fecha_desde, almafuerte_fecha_hasta
+    // fecha_archivo = "Fecha Reporte" que index.php extrae del archivo .rtf/.docx arrastrado
+    // (o la ingresada manualmente ahí). Es la que va en "Fecha de Medición": nunca se escribe
+    // a mano acá, siempre sale del reporte real.
+    $stmt = $pdo->prepare("SELECT fecha_desde, fecha_hasta, almafuerte_fecha_desde, almafuerte_fecha_hasta, fecha_archivo, id
         FROM reportes_analisis
         WHERE fecha_desde IS NOT NULL AND fecha_desde <> ''
-          AND YEAR(STR_TO_DATE(fecha_desde, '%d/%m/%Y')) = ?
-        ORDER BY STR_TO_DATE(fecha_desde, '%d/%m/%Y') ASC");
+        AND YEAR(STR_TO_DATE(fecha_desde, '%d/%m/%Y')) = ?
+        ORDER BY STR_TO_DATE(fecha_desde, '%d/%m/%Y') ASC, id ASC");
     $stmt->execute([$anio]);
-    $filas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $filasRaw = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Si hubiera más de un reporte con el mismo período exacto, nos quedamos con el más reciente.
+    $filasPorPeriodo = [];
+    foreach ($filasRaw as $fr) { $filasPorPeriodo[$fr['fecha_desde'] . '|' . $fr['fecha_hasta']] = $fr; }
+    $filas = array_values($filasPorPeriodo);
+    usort($filas, fn($a, $b) => fechaATimestamp($a['fecha_desde']) <=> fechaATimestamp($b['fecha_desde']));
 
     $stmtMeta = $pdo->prepare("SELECT * FROM informe_condensado WHERE fecha_desde = ? AND fecha_hasta = ?");
 
@@ -100,7 +109,7 @@ function obtenerSemanasDelAnio($pdo, $anio) {
             'anio' => $anio,
             'fecha_desde' => $f['fecha_desde'],
             'fecha_hasta' => $f['fecha_hasta'],
-            'fecha_medicion' => $meta['fecha_medicion'] ?? '',
+            'fecha_medicion' => $f['fecha_archivo'] ?? '', // automático, del archivo cargado en index.php
             'hum_pct' => $meta['hum_pct'] ?? null,
             'temp_c' => $meta['temp_c'] ?? null,
             'almafuerte_fecha_desde' => $f['almafuerte_fecha_desde'],
@@ -260,7 +269,8 @@ if ($vista === 'avance') {
             <?php endforeach; ?>
             <th colspan="2" class="borde-grueso">Muestreo<br>Almafuerte</th>
             <th colspan="2" class="borde-grueso">Media del periodo<br>Almafuerte</th>
-            <th rowspan="2" class="borde-grueso">ALMAFUERTE<br><span style="font-weight:normal;font-size:8px;"><?= ESTACION_ALMAFUERTE['CA']['lat'] ?><br><?= ESTACION_ALMAFUERTE['CA']['lon'] ?></span></th>
+            <th rowspan="2" class="borde-grueso">gr agua/m3<br>aire</th>
+            <th colspan="2" class="borde-grueso">ALMAFUERTE<br><span style="font-weight:normal;font-size:8px;"><?= ESTACION_ALMAFUERTE['CA']['lat'] ?><br><?= ESTACION_ALMAFUERTE['CA']['lon'] ?></span></th>
             <th rowspan="2" class="no-print"></th>
         </tr>
         <tr>
@@ -271,6 +281,7 @@ if ($vista === 'avance') {
             <?php endforeach; ?>
             <th>Desde</th><th>Hasta</th>
             <th>Hum. sin %</th><th>Temp. °C</th>
+            <th>Bq/L</th><th>Bq/m3</th>
         </tr>
         </thead>
         <tbody>
@@ -278,7 +289,7 @@ if ($vista === 'avance') {
             <tr class="fila-dato">
                 <td><?= htmlspecialchars($s['fecha_desde']) ?></td>
                 <td><?= htmlspecialchars($s['fecha_hasta']) ?></td>
-                <td><input form="<?= $fid ?>" type="text" name="fecha_medicion" value="<?= htmlspecialchars($s['fecha_medicion']) ?>" placeholder="dd/mm/aaaa" onkeyup="mascaraFecha(this)" style="width:70px"></td>
+                <td><?= htmlspecialchars($s['fecha_medicion']) ?: '<span style="color:#b45309;">s/d</span>' ?></td>
                 <td><input form="<?= $fid ?>" type="text" name="hum_pct" value="<?= $s['hum_pct'] !== null ? $s['hum_pct'] : '' ?>" placeholder="0.61" style="width:45px"></td>
                 <td><input form="<?= $fid ?>" type="text" name="temp_c" value="<?= $s['temp_c'] !== null ? $s['temp_c'] : '' ?>" placeholder="24" style="width:35px"></td>
                 <td><?= grAguaM3($s['temp_c']) ?></td>
@@ -293,11 +304,13 @@ if ($vista === 'avance') {
                 <td><?= htmlspecialchars($s['almafuerte_fecha_hasta']) ?></td>
                 <td><input form="<?= $fid ?>" type="text" name="almafuerte_hum_pct" value="<?= $s['almafuerte_hum_pct'] !== null ? $s['almafuerte_hum_pct'] : '' ?>" placeholder="0.64" style="width:45px"></td>
                 <td><input form="<?= $fid ?>" type="text" name="almafuerte_temp_c" value="<?= $s['almafuerte_temp_c'] !== null ? $s['almafuerte_temp_c'] : '' ?>" placeholder="25" style="width:35px"></td>
+                <td><?= grAguaM3($s['almafuerte_temp_c']) ?></td>
                 <?php
                     $bqlA = $s['detalle']['CA'] ?? null;
                     $m3A = $bqlA !== null && $bqlA !== '' ? bqM3($bqlA, $s['almafuerte_hum_pct'], $s['almafuerte_temp_c']) : null;
                 ?>
-                <td><?= $bqlA !== null && $bqlA !== '' ? $bqlA . ' / ' . ($m3A !== null ? number_format($m3A,3) : '-') : '<span style="color:#b45309;">s/d</span>' ?></td>
+                <td><?= $bqlA !== null && $bqlA !== '' ? $bqlA : '<span style="color:#b45309;">s/d</span>' ?></td>
+                <td><?= $m3A !== null ? number_format($m3A, 3) : '-' ?></td>
                 <td class="no-print" style="padding:0;">
                     <input form="<?= $fid ?>" type="text" name="observaciones" value="<?= htmlspecialchars($s['observaciones']) ?>" placeholder="Obs." style="width:60px; font-size:8px;">
                     <button form="<?= $fid ?>" type="submit" name="guardar_metadatos" class="btn-grafico" style="padding:2px 6px; font-size:9px; margin:0;" title="Guardar Humedad/Temp/Observaciones de esta semana">💾</button>
@@ -317,8 +330,9 @@ if ($vista === 'avance') {
                     <td><?= $prom[$sig]['bq_l']  !== null ? number_format($prom[$sig]['bq_l'], 2)  : '-' ?></td>
                     <td><?= $prom[$sig]['bq_m3'] !== null ? number_format($prom[$sig]['bq_m3'], 3) : '-' ?></td>
                 <?php endforeach; ?>
-                <td colspan="4"></td>
-                <td><?= $prom['CA']['bq_l'] !== null ? number_format($prom['CA']['bq_l'],2) . ' / ' . number_format($prom['CA']['bq_m3'],3) : '-' ?></td>
+                <td colspan="5"></td>
+                <td><?= $prom['CA']['bq_l']  !== null ? number_format($prom['CA']['bq_l'], 2)  : '-' ?></td>
+                <td><?= $prom['CA']['bq_m3'] !== null ? number_format($prom['CA']['bq_m3'], 3) : '-' ?></td>
                 <td class="no-print"></td>
             </tr>
         <?php endif; ?>
