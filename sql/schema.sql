@@ -91,3 +91,35 @@ CREATE TABLE IF NOT EXISTS datos_coinc (
     id_reporte INT NOT NULL,
     FOREIGN KEY (id_reporte) REFERENCES reportes_analisis(id) ON DELETE CASCADE
 );
+
+-- ============================================================
+-- Informe "Concentración de Tritio en Condensado de Humedad Ambiente"
+-- Replica de la planilla Excel (1er/2do/3er/4to trimestre, inf avanc, PROMEDIOS)
+-- ============================================================
+
+-- Una fila por semana de muestreo
+CREATE TABLE IF NOT EXISTS informe_condensado (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    trimestre TINYINT NOT NULL,              -- 1, 2, 3 o 4
+    anio INT NOT NULL,
+    fecha_desde VARCHAR(10),                 -- dd/mm/aaaa (muestreo: Torre Met/Lab/C.Rio III/F.Aerea/VDD)
+    fecha_hasta VARCHAR(10),
+    fecha_medicion VARCHAR(10),
+    hum_pct DECIMAL(6,4),                    -- "Hum. sin %" como fracción (ej 0.61)
+    temp_c DECIMAL(5,2),
+    almafuerte_fecha_desde VARCHAR(10),       -- Almafuerte tiene su propio período
+    almafuerte_fecha_hasta VARCHAR(10),
+    almafuerte_hum_pct DECIMAL(6,4),
+    almafuerte_temp_c DECIMAL(5,2),
+    observaciones VARCHAR(255)
+);
+
+-- Bq/L cargado por estación para cada semana (CTM, CL, CCR3, CFA, CVDD, CA)
+CREATE TABLE IF NOT EXISTS condensado_detalle (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    informe_id INT NOT NULL,
+    estacion VARCHAR(10) NOT NULL,
+    bq_l DECIMAL(10,4),
+    FOREIGN KEY (informe_id) REFERENCES informe_condensado(id) ON DELETE CASCADE,
+    UNIQUE KEY uniq_estacion_informe (informe_id, estacion)
+);
