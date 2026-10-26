@@ -260,27 +260,41 @@ if ($vista === 'avance') {
     <table class="cond">
         <thead>
         <tr>
-            <th colspan="2" class="borde-grueso">Muestreo</th>
-            <th rowspan="2" class="borde-grueso">Fecha de Medición</th>
+            <th colspan="2" rowspan="2" class="borde-grueso">Muestreo</th>
+            <th rowspan="4" class="borde-grueso">Fecha de<br>Medición</th>
             <th colspan="2" class="borde-grueso">Media del periodo</th>
-            <th rowspan="2" class="borde-grueso">gr agua/m3<br>aire</th>
+            <th rowspan="4" class="borde-grueso">gr agua/m3<br>aire</th>
             <?php foreach (ESTACIONES_CONDENSADO as $sig => $e): ?>
-                <th colspan="2" class="borde-grueso"><?= $e['nombre'] ?><br><span style="font-weight:normal;font-size:8px;"><?= $e['lat'] ?><br><?= $e['lon'] ?></span></th>
+                <th colspan="2" class="borde-grueso"><?= $e['nombre'] ?></th>
             <?php endforeach; ?>
-            <th colspan="2" class="borde-grueso">Muestreo<br>Almafuerte</th>
-            <th colspan="2" class="borde-grueso">Media del periodo<br>Almafuerte</th>
-            <th rowspan="2" class="borde-grueso">gr agua/m3<br>aire</th>
-            <th colspan="2" class="borde-grueso">ALMAFUERTE<br><span style="font-weight:normal;font-size:8px;"><?= ESTACION_ALMAFUERTE['CA']['lat'] ?><br><?= ESTACION_ALMAFUERTE['CA']['lon'] ?></span></th>
-            <th rowspan="2" class="no-print"></th>
+            <th colspan="2" rowspan="2" class="borde-grueso">Muestreo<br>Almafuerte</th>
+            <th colspan="2" class="borde-grueso">Media del periodo</th>
+            <th rowspan="4" class="borde-grueso">gr agua/m3<br>aire</th>
+            <th colspan="2" class="borde-grueso">ALMAFUERTE</th>
+            <th rowspan="4" class="no-print"></th>
         </tr>
         <tr>
-            <th>Desde</th><th>Hasta</th>
-            <th>Hum. sin %</th><th>Temp. °C</th>
+            <th rowspan="3" class="borde-grueso">Hum.<br>sin %</th>
+            <th rowspan="3" class="borde-grueso">Temp.<br>°C</th>
+            <?php foreach (ESTACIONES_CONDENSADO as $sig => $e): ?>
+                <th colspan="2" style="font-weight:normal; font-size:8px;"><?= $e['lat'] ?></th>
+            <?php endforeach; ?>
+            <th rowspan="3" class="borde-grueso">Hum.<br>sin %</th>
+            <th rowspan="3" class="borde-grueso">Temp.<br>°C</th>
+            <th colspan="2" style="font-weight:normal; font-size:8px;"><?= ESTACION_ALMAFUERTE['CA']['lat'] ?></th>
+        </tr>
+        <tr>
+            <th rowspan="2" class="borde-grueso">Desde</th><th rowspan="2" class="borde-grueso">Hasta</th>
+            <?php foreach (ESTACIONES_CONDENSADO as $sig => $e): ?>
+                <th colspan="2" style="font-weight:normal; font-size:8px;"><?= $e['lon'] ?></th>
+            <?php endforeach; ?>
+            <th rowspan="2" class="borde-grueso">Desde</th><th rowspan="2" class="borde-grueso">Hasta</th>
+            <th colspan="2" style="font-weight:normal; font-size:8px;"><?= ESTACION_ALMAFUERTE['CA']['lon'] ?></th>
+        </tr>
+        <tr>
             <?php foreach (ESTACIONES_CONDENSADO as $sig => $e): ?>
                 <th>Bq/L</th><th>Bq/m3</th>
             <?php endforeach; ?>
-            <th>Desde</th><th>Hasta</th>
-            <th>Hum. sin %</th><th>Temp. °C</th>
             <th>Bq/L</th><th>Bq/m3</th>
         </tr>
         </thead>
@@ -318,7 +332,7 @@ if ($vista === 'avance') {
             </tr>
         <?php endforeach; ?>
         <?php if (empty($semanasTrimestre)): ?>
-            <tr><td colspan="23" style="padding:16px; font-style:italic; color:#777;">
+            <tr><td colspan="24" style="padding:16px; font-style:italic; color:#777;">
                 No hay reportes guardados en index.php con fecha dentro de <?= NOMBRES_TRIMESTRE[$trimestre] ?> <?= $anio ?> todavía.
                 Cargá y guardá un reporte en index.php con Fecha Desde/Hasta de este trimestre para que aparezca acá.
             </td></tr>
