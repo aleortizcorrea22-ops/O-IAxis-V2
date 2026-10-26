@@ -312,7 +312,7 @@ if ($vista === 'avance') {
                     $m3 = $bql !== null && $bql !== '' ? bqM3($bql, $s['hum_pct'], $s['temp_c']) : null;
                 ?>
                     <td><?= $bql !== null && $bql !== '' ? $bql : '<span style="color:#b45309;">s/d</span>' ?></td>
-                    <td><?= $m3 !== null ? number_format($m3, 3) : '-' ?></td>
+                    <td><?= $m3 !== null ? number_format($m3, 3) : (($bql !== null && $bql !== '') ? '<span style="color:#b45309; font-size:7px;">falta Hum/Temp</span>' : '-') ?></td>
                 <?php endforeach; ?>
                 <td><?= htmlspecialchars($s['almafuerte_fecha_desde']) ?></td>
                 <td><?= htmlspecialchars($s['almafuerte_fecha_hasta']) ?></td>
@@ -324,7 +324,7 @@ if ($vista === 'avance') {
                     $m3A = $bqlA !== null && $bqlA !== '' ? bqM3($bqlA, $s['almafuerte_hum_pct'], $s['almafuerte_temp_c']) : null;
                 ?>
                 <td><?= $bqlA !== null && $bqlA !== '' ? $bqlA : '<span style="color:#b45309;">s/d</span>' ?></td>
-                <td><?= $m3A !== null ? number_format($m3A, 3) : '-' ?></td>
+                <td><?= $m3A !== null ? number_format($m3A, 3) : (($bqlA !== null && $bqlA !== '') ? '<span style="color:#b45309; font-size:7px;">falta Hum/Temp</span>' : '-') ?></td>
                 <td class="no-print" style="padding:0;">
                     <input form="<?= $fid ?>" type="text" name="observaciones" value="<?= htmlspecialchars($s['observaciones']) ?>" placeholder="Obs." style="width:60px; font-size:8px;">
                     <button form="<?= $fid ?>" type="submit" name="guardar_metadatos" class="btn-grafico" style="padding:2px 6px; font-size:9px; margin:0;" title="Guardar Humedad/Temp/Observaciones de esta semana">💾</button>

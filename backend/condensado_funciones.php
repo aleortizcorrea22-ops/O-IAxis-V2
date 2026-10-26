@@ -21,8 +21,12 @@ function grAguaM3($temp_c) {
 }
 
 // Bq/m3 = 0.001 * Bq/L * Humedad(fracción) * gr agua/m3 aire  -- fórmula exacta del Excel
+// Si falta Bq/L, Humedad o Temperatura, devuelve null (NO 0) para no confundir
+// "no calculado todavía" con "el resultado es cero".
 function bqM3($bq_l, $hum_pct, $temp_c) {
     if ($bq_l === null || $bq_l === '') return null;
+    if ($hum_pct === null || $hum_pct === '') return null;
+    if ($temp_c === null || $temp_c === '') return null;
     return 0.001 * (float)$bq_l * (float)$hum_pct * grAguaM3($temp_c);
 }
 
