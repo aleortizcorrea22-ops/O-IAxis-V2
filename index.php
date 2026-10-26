@@ -764,6 +764,7 @@ for ($j = 0; $j < 3; $j++):
 
 <script>
 const historicoMuestras = <?= json_encode($historico_muestras) ?>;
+const nombresCompletos = <?= json_encode($nombres_completos) ?>;
 const historicoQC = <?= json_encode($historico_qc) ?>;
 let chartNetos = null, chartQC = null, modalChart = null;
 let tipoNetos = 'smooth', tipoQC = 'smooth';
@@ -842,11 +843,11 @@ document.querySelectorAll('.row-muestra').forEach(r => {
             tension: 0.4
         });
     } else {
-        const visiblesPorDefault = ['LCR3', 'LR', 'LLR', 'LVDD', 'PE'];
+        const visiblesPorDefault = ['CTM', 'CCR3', 'CFA', 'CVDD', 'CL', 'CA'];
         let i = 0, labelsH = [];
         for(let m in historicoMuestras) {
             datasetsNetos.push({
-        label: m,
+        label: nombresCompletos[m] ? (m + ' (' + nombresCompletos[m] + ')') : m,
         data: historicoMuestras[m].map(point => {
             return {
                 x: point.x,

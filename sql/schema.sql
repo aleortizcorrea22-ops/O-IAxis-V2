@@ -29,16 +29,17 @@ CREATE TABLE IF NOT EXISTS muestras_catalogo (
     nombre_completo VARCHAR(150) NOT NULL
 );
 
--- Carga inicial sugerida con los IDs vistos hasta ahora (podés editar el nombre_completo cuando quieras)
+-- Carga inicial con los IDs y nombres reales de las estaciones (podés editar nombre_completo cuando quieras).
+-- Si la base ya existía con estos IDs cargados por autodetección (sigla = nombre_completo),
+-- este INSERT con ON DUPLICATE KEY UPDATE corrige el nombre a su valor real.
 INSERT INTO muestras_catalogo (sigla, nombre_completo) VALUES
-    ('CTM',  'CTM'),
-    ('CCR3', 'CCR3'),
-    ('CFA',  'CFA'),
-    ('CVDD', 'CVDD'),
-    ('CA',   'CA'),
-    ('CL',   'CL'),
-    ('PA',   'Almafuerte')
-ON DUPLICATE KEY UPDATE sigla = sigla;
+    ('CTM',  'TORRE MET.'),
+    ('CCR3', 'C. RIO III'),
+    ('CFA',  'F. AEREA'),
+    ('CVDD', 'VILLA DEL DIQUE'),
+    ('CA',   'ALMAFUERTE'),
+    ('CL',   'LABORATORIO')
+ON DUPLICATE KEY UPDATE nombre_completo = VALUES(nombre_completo);
 
 -- Tabla principal: un registro por reporte cargado/guardado
 CREATE TABLE IF NOT EXISTS reportes_analisis (
